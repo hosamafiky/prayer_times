@@ -6,6 +6,7 @@ abstract class PrayerRepository {
   Future<Either<AppError, DayPrayers>> getPrayerTimes({
     required int year,
     required int month,
+    required int day,
     required double latitude,
     required double longitude,
   });

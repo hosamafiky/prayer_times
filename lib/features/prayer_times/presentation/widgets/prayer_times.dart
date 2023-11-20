@@ -20,6 +20,7 @@ class PrayerTimesWidget extends StatelessWidget {
           builder: (context, prayersState) {
             return ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+              physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               children: [
                 _PrayerSection(

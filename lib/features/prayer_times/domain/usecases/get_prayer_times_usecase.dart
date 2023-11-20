@@ -8,6 +8,12 @@ class GetPrayerTimesUsecase {
 
   GetPrayerTimesUsecase(this.prayerRepository);
 
-  Future<Either<AppError, DayPrayers>> execute({required int year, required int month, required double latitude, required double longitude}) async =>
-      await prayerRepository.getPrayerTimes(year: year, month: month, latitude: latitude, longitude: longitude);
+  Future<Either<AppError, DayPrayers>> execute({
+    required int year,
+    required int month,
+    required int day,
+    required double latitude,
+    required double longitude,
+  }) async =>
+      await prayerRepository.getPrayerTimes(year: year, month: month, day: day, latitude: latitude, longitude: longitude);
 }

@@ -14,12 +14,13 @@ class PrayerRepositoryImpl implements PrayerRepository {
   Future<Either<AppError, DayPrayers>> getPrayerTimes({
     required int year,
     required int month,
+    required int day,
     required double latitude,
     required double longitude,
   }) async {
     if (await ConnectionHelper.hasConnection()) {
       try {
-        final prayers = await prayersRemoteDatasource.getDayPrayerTimes(year: year, month: month, latitude: latitude, longitude: longitude);
+        final prayers = await prayersRemoteDatasource.getDayPrayerTimes(year: year, month: month, day: day, latitude: latitude, longitude: longitude);
         return Right(prayers);
       } on ServerException catch (exception) {
         return Left(ServerError(message: exception.message));

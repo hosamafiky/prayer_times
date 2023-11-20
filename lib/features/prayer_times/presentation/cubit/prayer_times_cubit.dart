@@ -12,10 +12,11 @@ class PrayerTimesCubit extends Cubit<PrayerTimesState> {
     required this.getPrayerTimesUsecase,
   }) : super(const PrayerTimesInitialState());
 
-  void getDayPrayerTimes({required double latitude, required double longitude}) async {
+  void getDayPrayerTimes({required double latitude, required int day, required double longitude}) async {
     final either = await getPrayerTimesUsecase.execute(
       year: DateTime.now().year,
       month: DateTime.now().month,
+      day: day,
       latitude: latitude,
       longitude: longitude,
     );

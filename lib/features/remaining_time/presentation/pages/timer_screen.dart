@@ -4,7 +4,6 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:json_serializable_learn/core/utils/snackbar.dart';
 import 'package:json_serializable_learn/features/location/presentation/cubit/location_cubit.dart';
 import 'package:json_serializable_learn/features/prayer_times/presentation/cubit/prayer_times_cubit.dart';
 import 'package:json_serializable_learn/features/prayer_times/presentation/widgets/prayer_times.dart';
@@ -41,43 +40,18 @@ class _TimerScreenState extends State<TimerScreen> {
   Future<void> getActiveNotifications() async => await LocalNotificationService().getNotifications();
   Duration _calculateDifference(DateTime time) => time.difference(DateTime.now());
 
-  Prayer _getTheNextPrayer(DayPrayers dayPrayers) {
-    final now = DateTime.now();
-    if (dayPrayers.timings.fajr.time.isAfter(now)) {
-      return dayPrayers.timings.fajr;
-    } else if (dayPrayers.timings.dhuhr.time.isAfter(now)) {
-      return dayPrayers.timings.dhuhr;
-    } else if (dayPrayers.timings.asr.time.isAfter(now)) {
-      return dayPrayers.timings.asr;
-    } else if (dayPrayers.timings.maghrib.time.isAfter(now)) {
-      return dayPrayers.timings.maghrib;
-    } else if (dayPrayers.timings.isha.time.isAfter(now)) {
-      return dayPrayers.timings.isha;
-    } else {
-      return dayPrayers.timings.fajr.copyWith(time: dayPrayers.timings.fajr.time.add(const Duration(days: 1)));
-    }
-  }
-
-  void scheduleNextPrayer(Prayer prayer) async {
+  Future<void> scheduleNextPrayer(Prayer prayer) async {
     await LocalNotificationService().schedule(
       title: 'صلاة ${prayer.arTitle}',
       body: 'باقي على صلاة ${prayer.arTitle} ١٠ دقائق',
       time: prayer.time.subtract(const Duration(minutes: 10)),
     );
 
-    if (context.mounted) {
-      showSnackBar(context, data: 'تم عمل إخطار ${prayer.time.subtract(const Duration(minutes: 10))}');
-    }
-
     await LocalNotificationService().schedule(
       title: 'صلاة ${prayer.arTitle}',
       body: 'حان الان موعد صلاة ${prayer.arTitle}',
       time: prayer.time,
     );
-
-    if (context.mounted) {
-      showSnackBar(context, data: 'تم عمل إخطار ${prayer.time}');
-    }
   }
 
   @override
@@ -87,8 +61,8 @@ class _TimerScreenState extends State<TimerScreen> {
         BlocListener<RemainingTimeCubit, RemainingTimeState>(
           listenWhen: (prevoius, current) => prevoius.nextPrayer != current.nextPrayer,
           listener: (context, state) {
-            if (state is RemainingTimeChangedState) {
-              scheduleNextPrayer(_getTheNextPrayer(context.read<PrayerTimesCubit>().state.dayPrayers!));
+            if (state is RemainingTimeChangedState && context.read<PrayerTimesCubit>().state.dayPrayers != null) {
+              scheduleNextPrayer(context.read<PrayerTimesCubit>().state.dayPrayers!.getNextPrayer()!);
             }
           },
         ),
@@ -98,6 +72,7 @@ class _TimerScreenState extends State<TimerScreen> {
               log(state.error!.message);
             } else {
               context.read<PrayerTimesCubit>().getDayPrayerTimes(
+                    day: DateTime.now().day,
                     latitude: context.read<LocationCubit>().state.location!.latitude,
                     longitude: context.read<LocationCubit>().state.location!.longitude,
                   );
@@ -107,13 +82,20 @@ class _TimerScreenState extends State<TimerScreen> {
         BlocListener<PrayerTimesCubit, PrayerTimesState>(
           listener: (context, state) {
             if (state.dayPrayers != null) {
-              timer = Timer.periodic(
-                const Duration(seconds: 1),
-                (_) => context.read<RemainingTimeCubit>().onUpdateRemainingTime(
-                      nextPrayer: _getTheNextPrayer(state.dayPrayers!),
-                      remainingTime: _calculateDifference(_getTheNextPrayer(state.dayPrayers!).time),
-                    ),
-              );
+              timer = Timer.periodic(const Duration(seconds: 1), (_) {
+                if (state.dayPrayers!.getNextPrayer() != null) {
+                  context.read<RemainingTimeCubit>().onUpdateRemainingTime(
+                        nextPrayer: state.dayPrayers!.getNextPrayer()!,
+                        remainingTime: _calculateDifference(state.dayPrayers!.getNextPrayer()!.time),
+                      );
+                } else {
+                  context.read<PrayerTimesCubit>().getDayPrayerTimes(
+                        day: DateTime.now().add(const Duration(days: 1)).day,
+                        latitude: context.read<LocationCubit>().state.location!.latitude,
+                        longitude: context.read<LocationCubit>().state.location!.longitude,
+                      );
+                }
+              });
             }
           },
         ),
@@ -130,7 +112,7 @@ class _TimerScreenState extends State<TimerScreen> {
                 builder: (context, state) {
                   return Text(
                     state.dayPrayers != null
-                        ? '${state.dayPrayers!.date.hijri.day} ${state.dayPrayers!.date.hijri.month.en} ${context.read<PrayerTimesCubit>().state.dayPrayers!.date.hijri.year} / ${context.read<PrayerTimesCubit>().state.dayPrayers!.date.readable}'
+                        ? '${state.dayPrayers!.date.hijri.day} ${state.dayPrayers!.date.hijri.month.en} ${state.dayPrayers!.date.hijri.year} / ${state.dayPrayers!.date.readable}'
                         : '',
                     style: Theme.of(context).textTheme.displayMedium!.copyWith(fontSize: 15),
                   );

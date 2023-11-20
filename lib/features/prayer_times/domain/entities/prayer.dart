@@ -10,6 +10,23 @@ class DayPrayers extends Equatable {
     required this.date,
   });
 
+  Prayer? getNextPrayer() {
+    final now = DateTime.now();
+    if (timings.fajr.time.isAfter(now)) {
+      return timings.fajr;
+    } else if (timings.dhuhr.time.isAfter(now)) {
+      return timings.dhuhr;
+    } else if (timings.asr.time.isAfter(now)) {
+      return timings.asr;
+    } else if (timings.maghrib.time.isAfter(now)) {
+      return timings.maghrib;
+    } else if (timings.isha.time.isAfter(now)) {
+      return timings.isha;
+    } else {
+      return null;
+    }
+  }
+
   @override
   List<Object> get props => [timings, date];
 }
